@@ -43,7 +43,7 @@ public class Main extends javax.swing.JFrame {
         labelExportFolder = new javax.swing.JLabel();
         textfieldExportFolder = new javax.swing.JTextField();
         buttonExportFolder = new javax.swing.JButton();
-        jButton1 = new javax.swing.JButton();
+        buttonExecute = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         textareaResult = new javax.swing.JTextArea();
         labelImportIcon = new javax.swing.JLabel();
@@ -87,7 +87,12 @@ public class Main extends javax.swing.JFrame {
             }
         });
 
-        jButton1.setText("Execute");
+        buttonExecute.setText("Execute");
+        buttonExecute.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonExecuteActionPerformed(evt);
+            }
+        });
 
         jScrollPane2.setBorder(null);
 
@@ -116,7 +121,7 @@ public class Main extends javax.swing.JFrame {
                         .addComponent(buttonExportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(buttonExecute, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
@@ -131,7 +136,7 @@ public class Main extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
-        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {buttonExportFolder, buttonImportFolder, jButton1});
+        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {buttonExecute, buttonExportFolder, buttonImportFolder});
 
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -155,7 +160,7 @@ public class Main extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 132, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton1)
+                .addComponent(buttonExecute)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -190,6 +195,12 @@ public class Main extends javax.swing.JFrame {
             complete = false;
         }
     }//GEN-LAST:event_textfieldExportFolderMouseClicked
+
+    private void buttonExecuteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonExecuteActionPerformed
+        // TODO add your handling code here:
+        buttonExecute.setEnabled(false);
+        buttonExecute.setEnabled(true);
+    }//GEN-LAST:event_buttonExecuteActionPerformed
 
     /**
      * @param args the command line arguments
@@ -287,9 +298,9 @@ public class Main extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton buttonExecute;
     private javax.swing.JButton buttonExportFolder;
     private javax.swing.JButton buttonImportFolder;
-    private javax.swing.JButton jButton1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JLabel labelExportFolder;
     private javax.swing.JLabel labelExportIcon;
