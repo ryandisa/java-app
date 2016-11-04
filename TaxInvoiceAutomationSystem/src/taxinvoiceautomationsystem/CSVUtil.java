@@ -57,16 +57,20 @@ public class CSVUtil {
 
     public List readData() throws FileNotFoundException, IOException {
         CSVReader csvReader = new CSVReader(new FileReader(filepath));
-        return csvReader.readAll();
+        List list = csvReader.readAll();
+        csvReader.close();
+        return list;
     }
 
     public void writeData() throws IOException {
         CSVWriter csvWriter = new CSVWriter(new FileWriter(filepath));
         csvWriter.writeAll(data);
+        csvWriter.close();
     }
 
     public void writeResultSet() throws IOException, SQLException {
         CSVWriter csvWriter = new CSVWriter(new FileWriter(filepath));
         csvWriter.writeAll(resultSet, true);
+        csvWriter.close();
     }
 }

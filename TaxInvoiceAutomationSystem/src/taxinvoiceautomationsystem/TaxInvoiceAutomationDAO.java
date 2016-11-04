@@ -37,8 +37,8 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
     public static final int STAT_DB_ERROR = 990;
     public static final int STAT_WRITE_ERROR = 991;
 
-    public static final String FILENAME_TRANSACTION = "\\transactions.csv";
-    public static final String FILENAME_ADJUSTMENT = "\\adjustments.csv";
+    public static final String FILENAME_TRANSACTIONS = "\\transactions.csv";
+    public static final String FILENAME_ADJUSTMENTS = "\\adjustments.csv";
 
     private Date extractStart, extractEnd;
     private String filepathImport, filepathExport;
@@ -115,6 +115,7 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
             calculateResult();
             writeResult();
         } catch (SQLException | IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -161,21 +162,21 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "            fk_sales_order_item = soi.id_sales_order_item\n"
                 + "                AND fk_sales_order_item_status = 27)\n"
                 + "    WHERE\n"
-                + "        tr.created_at >= '" + dateFormat(extractEnd) + "'\n"
+                + "        tr.created_at >= '" + dateFormat(extractStart) + "'\n"
                 + "            AND tr.created_at < '" + dateFormat(extractEnd) + "'\n"
                 + "            AND tr.fk_transaction_type IN (16 , 3, 15)\n"
                 + "    GROUP BY transaction_number) sc;";
 
         ResultSet rs = stmt.executeQuery(sql);
-        new CSVUtil(filepathImport + FILENAME_TRANSACTION, rs).writeResultSet();
-        List<String[]> transactionID = new CSVUtil(filepathImport + FILENAME_ADJUSTMENT).readData();
+        new CSVUtil(filepathImport + FILENAME_TRANSACTIONS, rs).writeResultSet();
+        List<String[]> transactionID = new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS).readData();
         sql = "";
 
         for (String[] id : transactionID) {
-            sql = "'" + id[0] + "',";
+            sql = sql + "'" + id[0] + "',";
         }
 
-        sql = sql.substring(0, sql.length() - 2);
+        sql = sql.substring(0, sql.length() - 1);
 
         sql = "SELECT \n"
                 + "    *\n"
@@ -217,7 +218,7 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "    GROUP BY transaction_number) sc;";
 
         rs = stmt.executeQuery(sql);
-        new CSVUtil(filepathImport + FILENAME_ADJUSTMENT, rs).writeResultSet();
+        new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS, rs).writeResultSet();
     }
 
     public void importData() throws SQLException {
@@ -227,20 +228,26 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(Integer.MIN_VALUE);
 
+        String filepath = filepathImport + FILENAME_TRANSACTIONS;
+        filepath = filepath.replace("\\", "\\\\");
+
         int i = stmt.executeUpdate("TRUNCATE TABLE tias.transaction;");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
-                + "	'" + filepathImport + FILENAME_TRANSACTION + "'\n"
+                + "	'" + filepath + "'\n"
                 + "IGNORE INTO TABLE\n"
-                + "	ship_calc_env.anondb_extract\n"
+                + "	tias.transaction\n"
                 + "COLUMNS TERMINATED BY\n"
                 + "	','\n"
                 + "OPTIONALLY ENCLOSED BY\n"
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
+
+        filepath = filepathImport + FILENAME_ADJUSTMENTS;
+        filepath = filepath.replace("\\", "\\\\");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
-                + "	'" + filepathImport + FILENAME_ADJUSTMENT + "'\n"
+                + "	'" + filepath + "'\n"
                 + "IGNORE INTO TABLE\n"
-                + "	ship_calc_env.anondb_extract\n"
+                + "	tias.transaction\n"
                 + "COLUMNS TERMINATED BY\n"
                 + "	','\n"
                 + "OPTIONALLY ENCLOSED BY\n"
@@ -248,7 +255,59 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "IGNORE 1 ROWS;");
     }
 
-    public void calculateResult() {
+    public void calculateResult() throws SQLException, IOException {
+        ConnectionManagerLocalhost cm = new ConnectionManagerLocalhost();
+        Connection conn = cm.open();
+        Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
+                ResultSet.CONCUR_READ_ONLY);
+        stmt.setFetchSize(Integer.MIN_VALUE);
+
+        String sql = "SELECT \n"
+                + "    *,\n"
+                + "    IF(result.vat_number IS NULL\n"
+                + "            OR result.vat_number = '',\n"
+                + "        sml.vat_number,\n"
+                + "        result.vat_number) 'vat_number_resulting',\n"
+                + "    IF(result.address IS NULL\n"
+                + "            OR result.address = '',\n"
+                + "        sml.address,\n"
+                + "        result.address) 'address_resulting',\n"
+                + "    IF(result.email IS NULL\n"
+                + "            OR result.email = '',\n"
+                + "        sml.email,\n"
+                + "        result.email) 'email_resulting'\n"
+                + "FROM\n"
+                + "    (SELECT \n"
+                + "        tr.bob_id_supplier,\n"
+                + "            tr.sc_id_seller,\n"
+                + "            tr.legal_name,\n"
+                + "            tr.seller_name,\n"
+                + "            tr.tax_class,\n"
+                + "            TRIM(tr.vat_number) 'vat_number',\n"
+                + "            SUM(IF(tr.transaction_type = 'Payment Fee', value, 0)) 'payment_fee',\n"
+                + "            SUM(IF(tr.transaction_type = 'Commission Credit', value, 0)) 'commission_credit',\n"
+                + "            SUM(IF(tr.transaction_type = 'Commission', value, 0)) 'commission',\n"
+                + "            SUM(IF(tr.transaction_type = 'Seller Credit', value, 0)) 'seller_credit',\n"
+                + "            SUM(IF(tr.transaction_type = 'Seller Credit Item', value, 0)) 'seller_credit_item',\n"
+                + "            SUM(IF(tr.transaction_type = 'Seller Debit Item', value, 0)) 'seller_debit_item',\n"
+                + "            SUM(IF(tr.transaction_type = 'Other Fee', value, 0)) 'other_fee',\n"
+                + "            - SUM(tr.value) 'amount_paid_to_seller',\n"
+                + "            - SUM(tr.value) / 1.1 'amount_subjected_to_tax',\n"
+                + "            - SUM(tr.value) + (SUM(value) / 1.1) 'tax_amount',\n"
+                + "            tr.address,\n"
+                + "            tr.email\n"
+                + "    FROM\n"
+                + "        tias.transaction tr\n"
+                + "    WHERE\n"
+                + "        (delivered_date >= '" + dateFormat(extractStart) + "'\n"
+                + "            AND delivered_date < '" + dateFormat(extractEnd) + "')\n"
+                + "            OR delivered_date IS NULL\n"
+                + "    GROUP BY bob_id_supplier) result\n"
+                + "        LEFT JOIN\n"
+                + "    tias.supplier_manual_list sml ON result.bob_id_supplier = sml.bob_id_supplier;";
+
+        ResultSet rs = stmt.executeQuery(sql);
+        new CSVUtil(filepathExport + "\\result.csv", rs).writeResultSet();
     }
 
     public void writeResult() {
