@@ -439,7 +439,7 @@ public class Main extends javax.swing.JFrame {
 
     private final String[][] FILEPATH_IMPORT_CONSTRAINTS = {
         {"Adjustments", "adjustments.csv"},
-        {"Adrress", "address.csv"}
+        {"Seller Details", "seller_details.csv"}
     };
 
     private final String COMPONENT_CLICKED_EXTRACT_START = "EXTRACT_START";

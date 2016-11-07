@@ -39,6 +39,7 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
 
     public static final String FILENAME_TRANSACTIONS = "\\transactions.csv";
     public static final String FILENAME_ADJUSTMENTS = "\\adjustments.csv";
+    public static final String FILENAME_SELLER_DETAILS = "\\seller_details.csv";
 
     private Date extractStart, extractEnd;
     private String filepathImport, filepathExport;
@@ -253,6 +254,18 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "OPTIONALLY ENCLOSED BY\n"
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
+        
+        filepath = filepathImport + FILENAME_SELLER_DETAILS;
+        filepath = filepath.replace("\\", "\\\\");
+        i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
+                + "	'" + filepath + "'\n"
+                + "IGNORE INTO TABLE\n"
+                + "	tias.seller_details\n"
+                + "COLUMNS TERMINATED BY\n"
+                + "	','\n"
+                + "OPTIONALLY ENCLOSED BY\n"
+                + "	'\"'\n"
+                + "IGNORE 1 ROWS;");
     }
 
     public void calculateResult() throws SQLException, IOException {
@@ -304,7 +317,7 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "            OR delivered_date IS NULL\n"
                 + "    GROUP BY bob_id_supplier) result\n"
                 + "        LEFT JOIN\n"
-                + "    tias.supplier_manual_list sml ON result.bob_id_supplier = sml.bob_id_supplier;";
+                + "    tias.seller_details sml ON result.bob_id_supplier = sml.bob_id_supplier;";
 
         ResultSet rs = stmt.executeQuery(sql);
         new CSVUtil(filepathExport + "\\result.csv", rs).writeResultSet();
