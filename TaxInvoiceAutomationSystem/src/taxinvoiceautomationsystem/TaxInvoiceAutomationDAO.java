@@ -40,6 +40,7 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
     public static final String FILENAME_TRANSACTIONS = "\\transactions.csv";
     public static final String FILENAME_ADJUSTMENTS = "\\adjustments.csv";
     public static final String FILENAME_SELLER_DETAILS = "\\seller_details.csv";
+    public static final String FILENAME_SELLER_DETAILS_MANUAL = "\\seller_details_manual.csv";
 
     private Date extractStart, extractEnd;
     private String filepathImport, filepathExport;
@@ -114,7 +115,6 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
             extractTransactions();
             importData();
             calculateResult();
-            writeResult();
         } catch (SQLException | IOException e) {
             e.printStackTrace();
         }
@@ -134,24 +134,14 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "        tr.number 'transaction_number',\n"
                 + "            tt.description 'transaction_type',\n"
                 + "            tr.value,\n"
-                + "            DATE_FORMAT(tr.created_at,'%Y-%m-%d %H:%i:%s') 'transaction_date',\n"
+                + "            DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s') 'transaction_date',\n"
                 + "            tr.description,\n"
                 + "            soi.id_sales_order_item 'sap_item_id',\n"
-                + "            DATE_FORMAT(soish.created_at,'%Y-%m-%d %H:%i:%s') 'delivered_date',\n"
-                + "            sel.src_id 'bob_id_supplier',\n"
-                + "            sel.id_seller 'sc_id_seller',\n"
-                + "            sel.short_code 'sc_short_code',\n"
-                + "            sel.name_company 'legal_name',\n"
-                + "            sel.name 'seller_name',\n"
-                + "            sel.tax_class,\n"
-                + "            sel.vat_number,\n"
-                + "            CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_address1\":\"', - 1), '\",\"', 1), ', ', SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_city\":\"', - 1), '\",\"', 1), ' ', SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_postcode\":\"', - 1), '\",\"', 1)) 'address',\n"
-                + "            sel.email,\n"
-                + "            sel.updated_at\n"
+                + "            DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s') 'delivered_date',\n"
+                + "            soi.bob_id_supplier"
                 + "    FROM\n"
                 + "        screport.transaction tr\n"
                 + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
-                + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
                 + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
@@ -186,24 +176,14 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "        tr.number 'transaction_number',\n"
                 + "            tt.description 'transaction_type',\n"
                 + "            tr.value,\n"
-                + "            DATE_FORMAT(tr.created_at,'%Y-%m-%d %H:%i:%s') 'transaction_date',\n"
+                + "            DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s') 'transaction_date',\n"
                 + "            tr.description,\n"
                 + "            soi.id_sales_order_item 'sap_item_id',\n"
-                + "            DATE_FORMAT(soish.created_at,'%Y-%m-%d %H:%i:%s') 'delivered_date',\n"
-                + "            sel.src_id 'bob_id_supplier',\n"
-                + "            sel.id_seller 'sc_id_seller',\n"
-                + "            sel.short_code 'sc_short_code',\n"
-                + "            sel.name_company 'legal_name',\n"
-                + "            sel.name 'seller_name',\n"
-                + "            sel.tax_class,\n"
-                + "            sel.vat_number,\n"
-                + "            CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_address1\":\"', - 1), '\",\"', 1), ', ', SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_city\":\"', - 1), '\",\"', 1), ' ', SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_postcode\":\"', - 1), '\",\"', 1)) 'address',\n"
-                + "            sel.email,\n"
-                + "            sel.updated_at\n"
+                + "            DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s') 'delivered_date',\n"
+                + "            soi.bob_id_supplier"
                 + "    FROM\n"
                 + "        screport.transaction tr\n"
                 + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
-                + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
                 + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
@@ -220,9 +200,13 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
 
         rs = stmt.executeQuery(sql);
         new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS, rs).writeResultSet();
+
+        stmt.close();
+        conn.close();
+        cm.close();
     }
 
-    public void importData() throws SQLException {
+    public void importData() throws SQLException, IOException {
         ConnectionManagerLocalhost cm = new ConnectionManagerLocalhost();
         Connection conn = cm.open();
         Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
@@ -232,11 +216,15 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
         String filepath = filepathImport + FILENAME_TRANSACTIONS;
         filepath = filepath.replace("\\", "\\\\");
 
-        int i = stmt.executeUpdate("TRUNCATE TABLE tias.transaction;");
+        int i = stmt.executeUpdate("TRUNCATE TABLE tias_java.transaction;");
+        i = stmt.executeUpdate("TRUNCATE TABLE tias_java.seller_details;");
+        i = stmt.executeUpdate("TRUNCATE TABLE tias_java.seller_details_manual;");
+        i = stmt.executeUpdate("TRUNCATE TABLE tias_java.transaction_type;");
+        
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
                 + "	'" + filepath + "'\n"
                 + "IGNORE INTO TABLE\n"
-                + "	tias.transaction\n"
+                + "	tias_java.transaction\n"
                 + "COLUMNS TERMINATED BY\n"
                 + "	','\n"
                 + "OPTIONALLY ENCLOSED BY\n"
@@ -248,24 +236,87 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
                 + "	'" + filepath + "'\n"
                 + "IGNORE INTO TABLE\n"
-                + "	tias.transaction\n"
+                + "	tias_java.transaction\n"
                 + "COLUMNS TERMINATED BY\n"
                 + "	','\n"
                 + "OPTIONALLY ENCLOSED BY\n"
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
-        
+
+        String sql = "SELECT \n"
+                + "    bob_id_supplier\n"
+                + "FROM\n"
+                + "    tias_java.transaction\n"
+                + "GROUP BY bob_id_supplier;";
+        ResultSet rs = stmt.executeQuery(sql);
+
+        sql = "";
+        while (rs.next()) {
+            sql = sql + rs.getInt("bob_id_supplier") + ",";
+        }
+
+        sql = sql.substring(0, sql.length() - 1);
+
+        sql = "SELECT \n"
+                + "    *\n"
+                + "FROM\n"
+                + "    (SELECT \n"
+                + "        sel.src_id 'bob_id_supplier',\n"
+                + "            sel.id_seller 'sc_id_seller',\n"
+                + "            sel.short_code 'sc_short_code',\n"
+                + "            sel.name_company 'legal_name',\n"
+                + "            sel.name 'seller_name',\n"
+                + "            sel.tax_class,\n"
+                + "            sel.vat_number,\n"
+                + "            CONCAT(SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_address1\":\"', - 1), '\",\"', 1), ', ', SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_city\":\"', - 1), '\",\"', 1), ' ', SUBSTRING_INDEX(SUBSTRING_INDEX(sel.tmp_data, 'customercare_postcode\":\"', - 1), '\",\"', 1)) 'address',\n"
+                + "            sel.email,\n"
+                + "            sel.updated_at\n"
+                + "    FROM\n"
+                + "        screport.seller sel\n"
+                + "    WHERE\n"
+                + "        sel.src_id IN (" + sql + ")\n"
+                + "    GROUP BY sel.src_id) sc;";
+
+        ConnectionManagerAnonDB cma = new ConnectionManagerAnonDB();
+        Connection conna = cma.open();
+        Statement stmta = conna.createStatement(ResultSet.TYPE_FORWARD_ONLY,
+                ResultSet.CONCUR_READ_ONLY);
+        stmta.setFetchSize(Integer.MIN_VALUE);
+
+        ResultSet rsa = stmta.executeQuery(sql);
+        new CSVUtil(filepathImport + FILENAME_SELLER_DETAILS, rsa).writeResultSet();
+
+        stmta.close();
+        conna.close();
+        cma.close();
+
         filepath = filepathImport + FILENAME_SELLER_DETAILS;
         filepath = filepath.replace("\\", "\\\\");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
                 + "	'" + filepath + "'\n"
                 + "IGNORE INTO TABLE\n"
-                + "	tias.seller_details\n"
+                + "	tias_java.seller_details\n"
                 + "COLUMNS TERMINATED BY\n"
                 + "	','\n"
                 + "OPTIONALLY ENCLOSED BY\n"
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
+
+        filepath = filepathImport + FILENAME_SELLER_DETAILS_MANUAL;
+        filepath = filepath.replace("\\", "\\\\");
+        i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
+                + "	'" + filepath + "'\n"
+                + "IGNORE INTO TABLE\n"
+                + "	tias_java.seller_details_manual\n"
+                + "COLUMNS TERMINATED BY\n"
+                + "	','\n"
+                + "OPTIONALLY ENCLOSED BY\n"
+                + "	'\"'\n"
+                + "IGNORE 1 ROWS;");
+
+        stmt.close();
+        conn.close();
+        cm.close();
     }
 
     public void calculateResult() throws SQLException, IOException {
@@ -276,28 +327,22 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
         stmt.setFetchSize(Integer.MIN_VALUE);
 
         String sql = "SELECT \n"
-                + "    *,\n"
-                + "    IF(result.vat_number IS NULL\n"
-                + "            OR result.vat_number = '',\n"
-                + "        sml.vat_number,\n"
-                + "        result.vat_number) 'vat_number_resulting',\n"
-                + "    IF(result.address IS NULL\n"
-                + "            OR result.address = '',\n"
-                + "        sml.address,\n"
-                + "        result.address) 'address_resulting',\n"
-                + "    IF(result.email IS NULL\n"
-                + "            OR result.email = '',\n"
-                + "        sml.email,\n"
-                + "        result.email) 'email_resulting'\n"
+                + "    *\n"
                 + "FROM\n"
                 + "    (SELECT \n"
-                + "        tr.bob_id_supplier,\n"
-                + "            tr.sc_id_seller,\n"
-                + "            tr.legal_name,\n"
-                + "            tr.seller_name,\n"
-                + "            tr.tax_class,\n"
-                + "            TRIM(tr.vat_number) 'vat_number',\n"
-                + "            SUM(IF(tr.transaction_type = 'Payment Fee', value, 0)) 'payment_fee',\n"
+                + "        IF(sd.legal_name IS NULL\n"
+                + "                OR TRIM(sd.legal_name) = '', sdm.legal_name, sd.legal_name) 'legal_name',\n"
+                + "            IF(sd.seller_name IS NULL\n"
+                + "                OR TRIM(sd.seller_name) = '', sdm.seller_name, sd.seller_name) 'seller_name',\n"
+                + "            IF(sd.vat_number IS NULL\n"
+                + "                OR TRIM(sd.vat_number) = '', sdm.vat_number, sd.vat_number) 'vat_number',\n"
+                + "            IF(sd.address IS NULL\n"
+                + "                OR TRIM(sd.address) = '', sdm.address, sd.address) 'address',\n"
+                + "            IF(sd.email IS NULL OR sd.email = '', sdm.email, sd.email) 'email',\n"
+                + "            result.*\n"
+                + "    FROM\n"
+                + "        (SELECT \n"
+                + "        SUM(IF(tr.transaction_type = 'Payment Fee', value, 0)) 'payment_fee',\n"
                 + "            SUM(IF(tr.transaction_type = 'Commission Credit', value, 0)) 'commission_credit',\n"
                 + "            SUM(IF(tr.transaction_type = 'Commission', value, 0)) 'commission',\n"
                 + "            SUM(IF(tr.transaction_type = 'Seller Credit', value, 0)) 'seller_credit',\n"
@@ -307,23 +352,24 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "            - SUM(tr.value) 'amount_paid_to_seller',\n"
                 + "            - SUM(tr.value) / 1.1 'amount_subjected_to_tax',\n"
                 + "            - SUM(tr.value) + (SUM(value) / 1.1) 'tax_amount',\n"
-                + "            tr.address,\n"
-                + "            tr.email\n"
+                + "            tr.bob_id_supplier\n"
                 + "    FROM\n"
-                + "        tias.transaction tr\n"
+                + "        tias_java.transaction tr\n"
                 + "    WHERE\n"
                 + "        (delivered_date >= '" + dateFormat(extractStart) + "'\n"
                 + "            AND delivered_date < '" + dateFormat(extractEnd) + "')\n"
                 + "            OR delivered_date IS NULL\n"
+                + "            OR delivered_date = '0000-00-00'"
                 + "    GROUP BY bob_id_supplier) result\n"
-                + "        LEFT JOIN\n"
-                + "    tias.seller_details sml ON result.bob_id_supplier = sml.bob_id_supplier;";
+                + "    LEFT JOIN tias_java.seller_details sd ON result.bob_id_supplier = sd.bob_id_supplier\n"
+                + "    LEFT JOIN tias_java.seller_details_manual sdm ON result.bob_id_supplier = sdm.bob_id_supplier) result";
 
         ResultSet rs = stmt.executeQuery(sql);
         new CSVUtil(filepathExport + "\\result.csv", rs).writeResultSet();
-    }
 
-    public void writeResult() {
+        stmt.close();
+        conn.close();
+        cm.close();
     }
 
     private String dateFormat(Date date) {
