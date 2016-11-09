@@ -25,25 +25,45 @@ import java.util.TimerTask;
 public class TaxInvoiceAutomationDAO extends TimerTask {
 
     public static final String PROPERTY_STATUS = "SCHEDULER_STATUS";
+    public static final String PROPERTY_MESSAGE = "SCHEDULER_MESSAGE";
     public static final String PROPERTY_PROGRESS = "SCHEDULER_PROGRESS";
     public static final String PROPERTY_RESULT = "SCHEDULER_RESULT";
-    public static final int STAT_INIT = 0;
-    public static final int STAT_CONNECT_DB = 1;
-    public static final int STAT_EXECUTE_QUERY = 2;
-    public static final int STAT_FETCH_RESULT = 3;
-    public static final int STAT_WRITE_XLSX = 4;
-    public static final int STAT_DISCONNECT_DB = 5;
-    public static final int STAT_DONE = 6;
-    public static final int STAT_DB_ERROR = 990;
-    public static final int STAT_WRITE_ERROR = 991;
+
+    public static final int STAT_START = 99990;
+    public static final int STAT_END = 99999;
+    public static final int STAT_CONNECT_ANONDB = 10;
+    public static final int STAT_CONNECT_LOCALDB = 11;
+    public static final int STAT_DISCONNECT_DB = 12;
+    public static final int STAT_EXECUTE_QUERY = 20;
+    public static final int STAT_CLEANUP_DATA = 21;
+    public static final int STAT_FETCH_RESULT = 30;
+
+    public static final int STAT_READ_TRANSACTION = 40;
+    public static final int STAT_READ_ADJUSTMENT = 41;
+    public static final int STAT_READ_SELLER_DETAILS = 42;
+    public static final int STAT_READ_SELLER_DETAILS_MANUAL = 43;
+    public static final int STAT_READ_RESULT = 44;
+
+    public static final int STAT_WRITE_TRANSACTION = 60;
+    public static final int STAT_WRITE_ADJUSTMENT = 61;
+    public static final int STAT_WRITE_SELLER_DETAILS = 62;
+    public static final int STAT_WRITE_RESULT = 63;
+    public static final int STAT_DONE = 100;
+
+    public static final int STAT_DAO_ERROR = 9000;
+    public static final int STAT_DB_ERROR = 9100;
+    public static final int STAT_WRITE_ERROR = 9200;
+    public static final int STAT_READ_ERROR = 9300;
 
     public static final String FILENAME_TRANSACTIONS = "\\transactions.csv";
     public static final String FILENAME_ADJUSTMENTS = "\\adjustments.csv";
     public static final String FILENAME_SELLER_DETAILS = "\\seller_details.csv";
     public static final String FILENAME_SELLER_DETAILS_MANUAL = "\\seller_details_manual.csv";
+    public static final String FILENAME_RESULT = "\\result.csv";
 
     private Date extractStart, extractEnd;
     private String filepathImport, filepathExport;
+    private String message;
     private int status;
     private PropertyChangeSupport changes;
 
@@ -112,15 +132,26 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
 
     public void executeProcess() {
         try {
+            propertyStatusChange(STAT_START);
+            message = "";
             extractTransactions();
             importData();
             calculateResult();
-        } catch (SQLException | IOException e) {
-            e.printStackTrace();
+            propertyStatusChange(STAT_DONE);
+            propertyMessageChange("Completed!");
+        } catch (Exception e) {
+            System.out.println(e);
+            propertyStatusChange(STAT_DB_ERROR);
+            propertyMessageChange("DATA EXTRACTION ERROR\n" + e);
+        } finally {
+            propertyStatusChange(STAT_END);
+            message = "";
         }
     }
 
     public void extractTransactions() throws SQLException, IOException {
+        propertyStatusChange(STAT_CONNECT_ANONDB);
+        propertyMessageChange("Connecting database...");
         ConnectionManagerAnonDB cm = new ConnectionManagerAnonDB();
         Connection conn = cm.open();
         Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
@@ -131,18 +162,19 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "    *\n"
                 + "FROM\n"
                 + "    (SELECT \n"
-                + "        tr.number 'transaction_number',\n"
-                + "            tt.description 'transaction_type',\n"
-                + "            tr.value,\n"
-                + "            DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s') 'transaction_date',\n"
-                + "            tr.description,\n"
-                + "            soi.id_sales_order_item 'sap_item_id',\n"
-                + "            DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s') 'delivered_date',\n"
-                + "            soi.bob_id_supplier"
+                + "        IFNULL(tr.number, 'NULL') 'transaction_number',\n"
+                + "            IFNULL(tt.description, 'NULL') 'transaction_type',\n"
+                + "            IFNULL(tr.value, 'NULL') 'value',\n"
+                + "            IFNULL(DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'transaction_date',\n"
+                + "            IFNULL(tr.description, 'NULL') 'description',\n"
+                + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
+                + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
+                + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'"
                 + "    FROM\n"
                 + "        screport.transaction tr\n"
                 + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
                 + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
+                + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
                 + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
@@ -158,33 +190,38 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "            AND tr.fk_transaction_type IN (16 , 3, 15)\n"
                 + "    GROUP BY transaction_number) sc;";
 
+        propertyStatusChange(STAT_EXECUTE_QUERY);
+        propertyMessageChange("Fetching data");
         ResultSet rs = stmt.executeQuery(sql);
+
+        propertyStatusChange(STAT_WRITE_TRANSACTION);
+        propertyMessageChange("Writing " + FILENAME_TRANSACTIONS.replace("\\", ""));
         new CSVUtil(filepathImport + FILENAME_TRANSACTIONS, rs).writeResultSet();
+
         List<String[]> transactionID = new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS).readData();
         sql = "";
-
         for (String[] id : transactionID) {
             sql = sql + "'" + id[0] + "',";
         }
-
         sql = sql.substring(0, sql.length() - 1);
 
         sql = "SELECT \n"
                 + "    *\n"
                 + "FROM\n"
                 + "    (SELECT \n"
-                + "        tr.number 'transaction_number',\n"
-                + "            tt.description 'transaction_type',\n"
-                + "            tr.value,\n"
-                + "            DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s') 'transaction_date',\n"
-                + "            tr.description,\n"
-                + "            soi.id_sales_order_item 'sap_item_id',\n"
-                + "            DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s') 'delivered_date',\n"
-                + "            soi.bob_id_supplier"
+                + "        IFNULL(tr.number, 'NULL') 'transaction_number',\n"
+                + "            IFNULL(tt.description, 'NULL') 'transaction_type',\n"
+                + "            IFNULL(tr.value, 'NULL') 'value',\n"
+                + "            IFNULL(DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'transaction_date',\n"
+                + "            IFNULL(tr.description, 'NULL') 'description',\n"
+                + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
+                + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
+                + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'"
                 + "    FROM\n"
                 + "        screport.transaction tr\n"
                 + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
                 + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
+                + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
                 + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
@@ -198,29 +235,41 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "        tr.number IN (" + sql + ")\n"
                 + "    GROUP BY transaction_number) sc;";
 
+        propertyStatusChange(STAT_EXECUTE_QUERY);
+        propertyMessageChange("Fetching data");
         rs = stmt.executeQuery(sql);
+
+        propertyStatusChange(STAT_WRITE_ADJUSTMENT);
+        propertyMessageChange("Writing " + FILENAME_ADJUSTMENTS.replace("\\", ""));
         new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS, rs).writeResultSet();
 
+        propertyStatusChange(STAT_DISCONNECT_DB);
+        propertyMessageChange("Disconnecting database...");
         stmt.close();
         conn.close();
         cm.close();
     }
 
     public void importData() throws SQLException, IOException {
+        propertyStatusChange(STAT_CONNECT_LOCALDB);
+        propertyMessageChange("Connecting local database...");
         ConnectionManagerLocalhost cm = new ConnectionManagerLocalhost();
         Connection conn = cm.open();
         Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(Integer.MIN_VALUE);
 
-        String filepath = filepathImport + FILENAME_TRANSACTIONS;
-        filepath = filepath.replace("\\", "\\\\");
-
+        propertyStatusChange(STAT_CLEANUP_DATA);
+        propertyMessageChange("Cleanup local database");
         int i = stmt.executeUpdate("TRUNCATE TABLE tias_java.transaction;");
         i = stmt.executeUpdate("TRUNCATE TABLE tias_java.seller_details;");
         i = stmt.executeUpdate("TRUNCATE TABLE tias_java.seller_details_manual;");
         i = stmt.executeUpdate("TRUNCATE TABLE tias_java.transaction_type;");
-        
+
+        propertyStatusChange(STAT_READ_TRANSACTION);
+        propertyMessageChange("Importing " + FILENAME_TRANSACTIONS.replace("\\", ""));
+        String filepath = filepathImport + FILENAME_TRANSACTIONS;
+        filepath = filepath.replace("\\", "\\\\");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
                 + "	'" + filepath + "'\n"
                 + "IGNORE INTO TABLE\n"
@@ -231,6 +280,8 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
 
+        propertyStatusChange(STAT_READ_ADJUSTMENT);
+        propertyMessageChange("Importing " + FILENAME_ADJUSTMENTS.replace("\\", ""));
         filepath = filepathImport + FILENAME_ADJUSTMENTS;
         filepath = filepath.replace("\\", "\\\\");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
@@ -248,15 +299,15 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "FROM\n"
                 + "    tias_java.transaction\n"
                 + "GROUP BY bob_id_supplier;";
+        propertyStatusChange(STAT_EXECUTE_QUERY);
+        propertyMessageChange("Fetching seller IDs");
         ResultSet rs = stmt.executeQuery(sql);
 
         sql = "";
         while (rs.next()) {
             sql = sql + rs.getInt("bob_id_supplier") + ",";
         }
-
         sql = sql.substring(0, sql.length() - 1);
-
         sql = "SELECT \n"
                 + "    *\n"
                 + "FROM\n"
@@ -277,19 +328,28 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "        sel.src_id IN (" + sql + ")\n"
                 + "    GROUP BY sel.src_id) sc;";
 
+        propertyStatusChange(STAT_CONNECT_ANONDB);
+        propertyMessageChange("Connecting database...");
         ConnectionManagerAnonDB cma = new ConnectionManagerAnonDB();
         Connection conna = cma.open();
         Statement stmta = conna.createStatement(ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_READ_ONLY);
         stmta.setFetchSize(Integer.MIN_VALUE);
 
+        propertyStatusChange(STAT_EXECUTE_QUERY);
+        propertyMessageChange("Fetching seller details");
         ResultSet rsa = stmta.executeQuery(sql);
+
+        propertyStatusChange(STAT_WRITE_SELLER_DETAILS);
+        propertyMessageChange("Writing " + FILENAME_SELLER_DETAILS.replace("\\", ""));
         new CSVUtil(filepathImport + FILENAME_SELLER_DETAILS, rsa).writeResultSet();
 
         stmta.close();
         conna.close();
         cma.close();
 
+        propertyStatusChange(STAT_READ_SELLER_DETAILS);
+        propertyMessageChange("Importing " + FILENAME_SELLER_DETAILS.replace("\\", ""));
         filepath = filepathImport + FILENAME_SELLER_DETAILS;
         filepath = filepath.replace("\\", "\\\\");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
@@ -302,6 +362,8 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
 
+        propertyStatusChange(STAT_READ_SELLER_DETAILS_MANUAL);
+        propertyMessageChange("Importing " + FILENAME_SELLER_DETAILS_MANUAL.replace("\\", ""));
         filepath = filepathImport + FILENAME_SELLER_DETAILS_MANUAL;
         filepath = filepath.replace("\\", "\\\\");
         i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
@@ -314,12 +376,16 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "	'\"'\n"
                 + "IGNORE 1 ROWS;");
 
+        propertyStatusChange(STAT_DISCONNECT_DB);
+        propertyMessageChange("Disconnecting database...");
         stmt.close();
         conn.close();
         cm.close();
     }
 
     public void calculateResult() throws SQLException, IOException {
+        propertyStatusChange(STAT_CONNECT_LOCALDB);
+        propertyMessageChange("Connecting local database...");
         ConnectionManagerLocalhost cm = new ConnectionManagerLocalhost();
         Connection conn = cm.open();
         Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
@@ -330,16 +396,13 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "    *\n"
                 + "FROM\n"
                 + "    (SELECT \n"
-                + "        IF(sd.legal_name IS NULL\n"
-                + "                OR TRIM(sd.legal_name) = '', sdm.legal_name, sd.legal_name) 'legal_name',\n"
-                + "            IF(sd.seller_name IS NULL\n"
-                + "                OR TRIM(sd.seller_name) = '', sdm.seller_name, sd.seller_name) 'seller_name',\n"
-                + "            IF(sd.vat_number IS NULL\n"
-                + "                OR TRIM(sd.vat_number) = '', sdm.vat_number, sd.vat_number) 'vat_number',\n"
-                + "            IF(sd.address IS NULL\n"
-                + "                OR TRIM(sd.address) = '', sdm.address, sd.address) 'address',\n"
-                + "            IF(sd.email IS NULL OR sd.email = '', sdm.email, sd.email) 'email',\n"
-                + "            result.*\n"
+                + "        IFNULL(sd.legal_name, IFNULL(sdm.legal_name, '')) 'legal_name',\n"
+                + "            IFNULL(sd.seller_name, IFNULL(sdm.seller_name, '')) 'seller_name',\n"
+                + "            IFNULL(IF(TRIM(sd.vat_number) = 'null'\n"
+                + "                OR TRIM(sd.vat_number) = '', '00.000.000.0-000.000', TRIM(sd.vat_number)), IFNULL(sdm.vat_number, '00.000.000.0-000.000')) 'vat_number1',\n"
+                + "            IFNULL(sd.address, IFNULL(sdm.address, '')) 'address',\n"
+                + "            IFNULL(sd.email, IFNULL(sdm.email, '')) 'email',\n"
+                + "            result.*"
                 + "    FROM\n"
                 + "        (SELECT \n"
                 + "        SUM(IF(tr.transaction_type = 'Payment Fee', value, 0)) 'payment_fee',\n"
@@ -364,8 +427,13 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "    LEFT JOIN tias_java.seller_details sd ON result.bob_id_supplier = sd.bob_id_supplier\n"
                 + "    LEFT JOIN tias_java.seller_details_manual sdm ON result.bob_id_supplier = sdm.bob_id_supplier) result";
 
+        propertyStatusChange(STAT_EXECUTE_QUERY);
+        propertyMessageChange("Fetching data");
         ResultSet rs = stmt.executeQuery(sql);
-        new CSVUtil(filepathExport + "\\result.csv", rs).writeResultSet();
+
+        propertyStatusChange(STAT_WRITE_RESULT);
+        propertyMessageChange("Writing " + FILENAME_RESULT.replace("\\", ""));
+        new CSVUtil(filepathExport + FILENAME_RESULT, rs).writeResultSet();
 
         stmt.close();
         conn.close();
@@ -377,8 +445,18 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
         return dateFormat.format(date);
     }
 
+    private void propertyStatusChange(int newStatus) {
+        changes.firePropertyChange(PROPERTY_STATUS, status, newStatus);
+        status = STAT_CONNECT_ANONDB;
+    }
+
+    private void propertyMessageChange(String message) {
+        changes.firePropertyChange(PROPERTY_MESSAGE, this.message, message);
+        this.message = message;
+    }
+
     @Override
     public void run() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        executeProcess();
     }
 }

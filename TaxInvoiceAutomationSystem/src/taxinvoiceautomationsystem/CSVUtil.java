@@ -62,15 +62,27 @@ public class CSVUtil {
         return list;
     }
 
-    public void writeData() throws IOException {
-        CSVWriter csvWriter = new CSVWriter(new FileWriter(filepath));
-        csvWriter.writeAll(data);
-        csvWriter.close();
-    }
-
     public void writeResultSet() throws IOException, SQLException {
         CSVWriter csvWriter = new CSVWriter(new FileWriter(filepath));
-        csvWriter.writeAll(resultSet, true);
+
+        int col = resultSet.getMetaData().getColumnCount();
+        int row = 0;
+        String[] resultrow = new String[col];
+
+        while (resultSet.next()) {
+            if (row == 0) {
+                for (int i = 0; i < col; i++) {
+                    resultrow[i] = resultSet.getMetaData().getColumnLabel(i + 1);
+                }
+                csvWriter.writeNext(resultrow, false);
+            }
+            for (int i = 0; i < col; i++) {
+                resultrow[i] = resultSet.getObject(i + 1) == null ? "NULL" : resultSet.getObject(i + 1).toString();
+            }
+            csvWriter.writeNext(resultrow, false);
+            row++;
+        }
+
         csvWriter.close();
     }
 }

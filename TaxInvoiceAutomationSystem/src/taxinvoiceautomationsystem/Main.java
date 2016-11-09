@@ -7,16 +7,20 @@ package taxinvoiceautomationsystem;
 
 import java.awt.Color;
 import java.awt.Image;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
+import javax.swing.text.DefaultCaret;
 
 /**
  *
@@ -30,6 +34,7 @@ public class Main extends javax.swing.JFrame {
     public Main() {
         initComponents();
 
+        ((DefaultCaret) textareaResult.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         bg = textfieldExtractStart.getBackground();
     }
 
@@ -128,6 +133,7 @@ public class Main extends javax.swing.JFrame {
         });
 
         jScrollPane2.setBorder(javax.swing.BorderFactory.createTitledBorder("result"));
+        jScrollPane2.setAutoscrolls(true);
 
         textareaResult.setBackground(new java.awt.Color(240, 240, 240));
         textareaResult.setColumns(20);
@@ -252,7 +258,10 @@ public class Main extends javax.swing.JFrame {
     private void buttonExecuteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonExecuteActionPerformed
         // TODO add your handling code here:
         if (extractStart != null && extractEnd != null && !filepathImport.isEmpty() && !filepathExport.isEmpty()) {
-            new TaxInvoiceAutomationDAO(extractStart, extractEnd, filepathImport, filepathExport).executeProcess();
+            TaxInvoiceAutomationDAO dao = new TaxInvoiceAutomationDAO(extractStart, extractEnd, filepathImport, filepathExport);
+            dao.addPropertyChangeListener(new MyPropertyChangeListener());
+            Timer timer = new Timer();
+            timer.schedule(dao, new Date());
         } else {
             textareaResult.append("Please complete all parameters!\n");
             JOptionPane.showMessageDialog(this, "Please complete all parameters!", "Warning", JOptionPane.WARNING_MESSAGE);
@@ -414,6 +423,36 @@ public class Main extends javax.swing.JFrame {
                 break;
             default:
                 break;
+        }
+    }
+
+    class MyPropertyChangeListener implements PropertyChangeListener {
+
+        @Override
+        public void propertyChange(PropertyChangeEvent pce) {
+            switch (pce.getPropertyName()) {
+                case TaxInvoiceAutomationDAO.PROPERTY_STATUS:
+                    switch ((int) pce.getNewValue()) {
+                        case TaxInvoiceAutomationDAO.STAT_START:
+                            textfieldExtractStart.setEnabled(false);
+                            textfieldExtractEnd.setEnabled(false);
+                            textfieldExportFolder.setEnabled(false);
+                            textfieldImportFolder.setEnabled(false);
+                            buttonExecute.setEnabled(false);
+                            break;
+                        case TaxInvoiceAutomationDAO.STAT_END:
+                            textfieldExtractStart.setEnabled(true);
+                            textfieldExtractEnd.setEnabled(true);
+                            textfieldExportFolder.setEnabled(true);
+                            textfieldImportFolder.setEnabled(true);
+                            buttonExecute.setEnabled(true);
+                            break;
+                    }
+                    break;
+                case TaxInvoiceAutomationDAO.PROPERTY_MESSAGE:
+                    textareaResult.append(pce.getNewValue().toString() + "\n");
+                    break;
+            }
         }
     }
 
