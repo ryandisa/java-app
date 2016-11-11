@@ -7,6 +7,8 @@ package taxinvoiceautomationsystem;
 
 import java.awt.Color;
 import java.awt.Image;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -33,7 +35,7 @@ public class Main extends javax.swing.JFrame {
      */
     public Main() {
         initComponents();
-
+        addComponentListener(new MyComponentListener());
         ((DefaultCaret) textareaResult.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         bg = textfieldExtractStart.getBackground();
     }
@@ -47,23 +49,60 @@ public class Main extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel4 = new javax.swing.JPanel();
+        jSplitPane1 = new javax.swing.JSplitPane();
+        jSplitPane2 = new javax.swing.JSplitPane();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jPanel1 = new javax.swing.JPanel();
+        textfieldExtractStart = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+        textfieldExtractEnd = new javax.swing.JTextField();
+        labelImportIcon = new javax.swing.JLabel();
         labelImportFolder = new javax.swing.JLabel();
         textfieldImportFolder = new javax.swing.JTextField();
         buttonImportFolder = new javax.swing.JButton();
         labelExportFolder = new javax.swing.JLabel();
         textfieldExportFolder = new javax.swing.JTextField();
         buttonExportFolder = new javax.swing.JButton();
-        buttonExecute = new javax.swing.JButton();
-        calendar = new taxinvoiceautomationsystem.JCalendar();
         jLabel1 = new javax.swing.JLabel();
-        textfieldExtractStart = new javax.swing.JTextField();
-        jLabel2 = new javax.swing.JLabel();
-        textfieldExtractEnd = new javax.swing.JTextField();
+        calendar = new taxinvoiceautomationsystem.JCalendar();
+        jSplitPane3 = new javax.swing.JSplitPane();
+        jPanel3 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
         textareaResult = new javax.swing.JTextArea();
-        labelImportIcon = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
+        buttonExecute = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        getContentPane().setLayout(new java.awt.CardLayout());
+
+        jPanel4.setLayout(new java.awt.CardLayout());
+
+        jSplitPane1.setBorder(null);
+        jSplitPane1.setDividerSize(0);
+        jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
+        jSplitPane1.setToolTipText("");
+
+        jSplitPane2.setBorder(null);
+        jSplitPane2.setDividerSize(0);
+
+        jScrollPane1.setBorder(null);
+
+        textfieldExtractStart.setEditable(false);
+        textfieldExtractStart.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                textfieldExtractStartMouseClicked(evt);
+            }
+        });
+
+        jLabel2.setText("Extract End (D+1)");
+
+        textfieldExtractEnd.setEditable(false);
+        textfieldExtractEnd.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                textfieldExtractEndMouseClicked(evt);
+            }
+        });
 
         labelImportFolder.setText("Import Folder");
 
@@ -101,36 +140,90 @@ public class Main extends javax.swing.JFrame {
             }
         });
 
-        buttonExecute.setText("Execute");
-        buttonExecute.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                buttonExecuteActionPerformed(evt);
-            }
-        });
+        jLabel1.setText("Extract Start");
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(textfieldExtractEnd)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(textfieldExportFolder, javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(textfieldImportFolder))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(buttonImportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(buttonExportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(textfieldExtractStart)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel1)
+                            .addComponent(jLabel2)
+                            .addComponent(labelExportFolder)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(labelImportFolder)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(labelImportIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 351, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {buttonExportFolder, buttonImportFolder});
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {labelExportFolder, labelImportFolder});
+
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(textfieldExtractStart, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(textfieldExtractEnd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(labelImportFolder, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(labelImportIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(textfieldImportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(buttonImportFolder))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(labelExportFolder)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(textfieldExportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(buttonExportFolder))
+                .addGap(0, 18, Short.MAX_VALUE))
+        );
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {labelExportFolder, labelImportFolder, labelImportIcon});
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {buttonExportFolder, buttonImportFolder, textfieldExportFolder, textfieldExtractEnd, textfieldExtractStart, textfieldImportFolder});
+
+        jScrollPane1.setViewportView(jPanel1);
+
+        jSplitPane2.setLeftComponent(jScrollPane1);
 
         calendar.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
             public void propertyChange(java.beans.PropertyChangeEvent evt) {
                 calendarPropertyChange(evt);
             }
         });
+        jSplitPane2.setRightComponent(calendar);
 
-        jLabel1.setText("Extract Start");
+        jSplitPane1.setLeftComponent(jSplitPane2);
 
-        textfieldExtractStart.setEditable(false);
-        textfieldExtractStart.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                textfieldExtractStartMouseClicked(evt);
-            }
-        });
+        jSplitPane3.setBorder(null);
+        jSplitPane3.setDividerSize(0);
 
-        jLabel2.setText("Extract End (D+1)");
-
-        textfieldExtractEnd.setEditable(false);
-        textfieldExtractEnd.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                textfieldExtractEndMouseClicked(evt);
-            }
-        });
+        jPanel3.setLayout(new java.awt.CardLayout());
 
         jScrollPane2.setBorder(javax.swing.BorderFactory.createTitledBorder("result"));
         jScrollPane2.setAutoscrolls(true);
@@ -142,86 +235,41 @@ public class Main extends javax.swing.JFrame {
         textareaResult.setBorder(null);
         jScrollPane2.setViewportView(textareaResult);
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane2)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(textfieldExtractEnd)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(textfieldExportFolder, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(textfieldImportFolder))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(buttonImportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(buttonExportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(textfieldExtractStart)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel1)
-                                    .addComponent(jLabel2)
-                                    .addComponent(labelExportFolder)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(labelImportFolder)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(labelImportIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addGap(0, 247, Short.MAX_VALUE)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(calendar, javax.swing.GroupLayout.PREFERRED_SIZE, 365, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(buttonExecute, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)))
+        jPanel3.add(jScrollPane2, "card2");
+
+        jSplitPane3.setLeftComponent(jPanel3);
+
+        buttonExecute.setText("Execute");
+        buttonExecute.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                buttonExecuteActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap(550, Short.MAX_VALUE)
+                .addComponent(buttonExecute, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
-
-        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {buttonExecute, buttonExportFolder, buttonImportFolder});
-
-        layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {labelExportFolder, labelImportFolder});
-
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(textfieldExtractStart, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(textfieldExtractEnd, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(labelImportFolder, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(labelImportIcon, javax.swing.GroupLayout.PREFERRED_SIZE, 14, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(textfieldImportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(buttonImportFolder))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(labelExportFolder)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(textfieldExportFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(buttonExportFolder)))
-                    .addComponent(calendar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                .addContainerGap(274, Short.MAX_VALUE)
                 .addComponent(buttonExecute)
                 .addContainerGap())
         );
 
-        layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {labelExportFolder, labelImportFolder, labelImportIcon});
+        jSplitPane3.setRightComponent(jPanel2);
 
-        layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {buttonExecute, buttonExportFolder, buttonImportFolder, textfieldExportFolder, textfieldExtractEnd, textfieldExtractStart, textfieldImportFolder});
+        jSplitPane1.setRightComponent(jSplitPane3);
+
+        jPanel4.add(jSplitPane1, "card2");
+
+        getContentPane().add(jPanel4, "card2");
 
         pack();
         setLocationRelativeTo(null);
@@ -258,7 +306,7 @@ public class Main extends javax.swing.JFrame {
     private void buttonExecuteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonExecuteActionPerformed
         // TODO add your handling code here:
         if (extractStart != null && extractEnd != null && !filepathImport.isEmpty() && !filepathExport.isEmpty()) {
-            TaxInvoiceAutomationDAO dao = new TaxInvoiceAutomationDAO(extractStart, extractEnd, filepathImport, filepathExport);
+            TaxInvoiceCalculationDAO dao = new TaxInvoiceCalculationDAO(extractStart, extractEnd, filepathImport, filepathExport);
             dao.addPropertyChangeListener(new MyPropertyChangeListener());
             Timer timer = new Timer();
             timer.schedule(dao, new Date());
@@ -352,14 +400,14 @@ public class Main extends javax.swing.JFrame {
                 textareaResult.append("Selecting import folder...\n");
                 textfieldImportFolder.setText(chooser.getSelectedFile().getAbsolutePath());
 
-                for (String[] filepathImportConstraints : FILEPATH_IMPORT_CONSTRAINTS) {
+                /*for (String[] filepathImportConstraints : FILEPATH_IMPORT_CONSTRAINTS) {
                     File file = new File(chooser.getSelectedFile().getAbsolutePath() + "\\" + filepathImportConstraints[1]);
 
                     if (!file.exists()) {
                         textareaResult.append("File " + filepathImportConstraints[1] + " is missing\n");
                         complete = false;
                     }
-                }
+                }*/
                 if (!complete) {
                     showLabelIcon(labelImportIcon, LABEL_ICON_ERROR);
                     showTextFieldFilepathToolTip(textfieldImportFolder, "One or more files are missing");
@@ -426,21 +474,43 @@ public class Main extends javax.swing.JFrame {
         }
     }
 
+    class MyComponentListener implements ComponentListener {
+
+        @Override
+        public void componentResized(ComponentEvent ce) {
+            jSplitPane1.setDividerLocation(0.5);
+            jSplitPane2.setDividerLocation(0.7);
+            jSplitPane3.setDividerLocation(0.7);
+        }
+
+        @Override
+        public void componentMoved(ComponentEvent ce) {
+        }
+
+        @Override
+        public void componentShown(ComponentEvent ce) {
+        }
+
+        @Override
+        public void componentHidden(ComponentEvent ce) {
+        }
+    }
+
     class MyPropertyChangeListener implements PropertyChangeListener {
 
         @Override
         public void propertyChange(PropertyChangeEvent pce) {
             switch (pce.getPropertyName()) {
-                case TaxInvoiceAutomationDAO.PROPERTY_STATUS:
+                case TaxInvoiceCalculationDAO.PROPERTY_STATUS:
                     switch ((int) pce.getNewValue()) {
-                        case TaxInvoiceAutomationDAO.STAT_START:
+                        case TaxInvoiceCalculationDAO.STAT_START:
                             textfieldExtractStart.setEnabled(false);
                             textfieldExtractEnd.setEnabled(false);
                             textfieldExportFolder.setEnabled(false);
                             textfieldImportFolder.setEnabled(false);
                             buttonExecute.setEnabled(false);
                             break;
-                        case TaxInvoiceAutomationDAO.STAT_END:
+                        case TaxInvoiceCalculationDAO.STAT_END:
                             textfieldExtractStart.setEnabled(true);
                             textfieldExtractEnd.setEnabled(true);
                             textfieldExportFolder.setEnabled(true);
@@ -449,7 +519,7 @@ public class Main extends javax.swing.JFrame {
                             break;
                     }
                     break;
-                case TaxInvoiceAutomationDAO.PROPERTY_MESSAGE:
+                case TaxInvoiceCalculationDAO.PROPERTY_MESSAGE:
                     textareaResult.append(pce.getNewValue().toString() + "\n");
                     break;
             }
@@ -463,7 +533,15 @@ public class Main extends javax.swing.JFrame {
     private taxinvoiceautomationsystem.JCalendar calendar;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JSplitPane jSplitPane1;
+    private javax.swing.JSplitPane jSplitPane2;
+    private javax.swing.JSplitPane jSplitPane3;
     private javax.swing.JLabel labelExportFolder;
     private javax.swing.JLabel labelImportFolder;
     private javax.swing.JLabel labelImportIcon;
@@ -475,11 +553,6 @@ public class Main extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
     private final int FILEPATH_OPTION_IMPORT = 1;
     private final int FILEPATH_OPTION_EXPORT = 2;
-
-    private final String[][] FILEPATH_IMPORT_CONSTRAINTS = {
-        {"Adjustments", "adjustments.csv"},
-        {"Seller Details", "seller_details.csv"}
-    };
 
     private final String COMPONENT_CLICKED_EXTRACT_START = "EXTRACT_START";
     private final String COMPONENT_CLICKED_EXTRACT_END = "EXTRACT_END";

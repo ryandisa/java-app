@@ -7,6 +7,7 @@ package taxinvoiceautomationsystem;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -22,7 +23,7 @@ import java.util.TimerTask;
  *
  * @author Refly IDFA
  */
-public class TaxInvoiceAutomationDAO extends TimerTask {
+public class TaxInvoiceCalculationDAO extends TimerTask {
 
     public static final String PROPERTY_STATUS = "SCHEDULER_STATUS";
     public static final String PROPERTY_MESSAGE = "SCHEDULER_MESSAGE";
@@ -67,10 +68,10 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
     private int status;
     private PropertyChangeSupport changes;
 
-    public TaxInvoiceAutomationDAO() {
+    public TaxInvoiceCalculationDAO() {
     }
 
-    public TaxInvoiceAutomationDAO(Date extractStart, Date extractEnd, String filepathImport, String filepathExport) {
+    public TaxInvoiceCalculationDAO(Date extractStart, Date extractEnd, String filepathImport, String filepathExport) {
         this.extractStart = extractStart;
         this.extractEnd = extractEnd;
         this.filepathImport = filepathImport;
@@ -169,12 +170,48 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "            IFNULL(tr.description, 'NULL') 'description',\n"
                 + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
                 + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
-                + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'"
+                + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'\n"
+                + "    FROM\n"
+                + "        (SELECT \n"
+                + "        tr.*\n"
                 + "    FROM\n"
                 + "        screport.transaction tr\n"
+                + "    LEFT JOIN asc_live.transaction atr ON tr.number = atr.number\n"
+                + "    WHERE\n"
+                + "        tr.created_at >= '" + dateFormat(extractStart) + "'\n"
+                + "            AND tr.created_at < '" + dateFormat(extractEnd) + "'\n"
+                + "            AND tr.fk_transaction_type IN (16 , 3, 15)\n"
+                + "            AND atr.id_transaction IS NULL) tr\n"
                 + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
                 + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
                 + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
+                + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
+                + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
+                + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
+                + "            MIN(id_sales_order_item_status_history)\n"
+                + "        FROM\n"
+                + "            oms_live.ims_sales_order_item_status_history\n"
+                + "        WHERE\n"
+                + "            fk_sales_order_item = soi.id_sales_order_item\n"
+                + "                AND fk_sales_order_item_status = 27)\n"
+                + "    GROUP BY transaction_number) scl \n"
+                + "UNION ALL SELECT \n"
+                + "    *\n"
+                + "FROM\n"
+                + "    (SELECT \n"
+                + "        IFNULL(tr.number, 'NULL') 'transaction_number',\n"
+                + "            IFNULL(tt.description, 'NULL') 'transaction_type',\n"
+                + "            IFNULL(tr.value, 'NULL') 'value',\n"
+                + "            IFNULL(DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'transaction_date',\n"
+                + "            IFNULL(tr.description, 'NULL') 'description',\n"
+                + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
+                + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
+                + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'\n"
+                + "    FROM\n"
+                + "        asc_live.transaction tr\n"
+                + "    LEFT JOIN asc_live.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
+                + "    LEFT JOIN asc_live.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
+                + "    LEFT JOIN asc_live.seller sel ON tr.fk_seller = sel.id_seller\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
                 + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
                 + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
@@ -188,24 +225,9 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "        tr.created_at >= '" + dateFormat(extractStart) + "'\n"
                 + "            AND tr.created_at < '" + dateFormat(extractEnd) + "'\n"
                 + "            AND tr.fk_transaction_type IN (16 , 3, 15)\n"
-                + "    GROUP BY transaction_number) sc;";
+                + "    GROUP BY transaction_number) sca;";
 
-        propertyStatusChange(STAT_EXECUTE_QUERY);
-        propertyMessageChange("Fetching data");
-        ResultSet rs = stmt.executeQuery(sql);
-
-        propertyStatusChange(STAT_WRITE_TRANSACTION);
-        propertyMessageChange("Writing " + FILENAME_TRANSACTIONS.replace("\\", ""));
-        new CSVUtil(filepathImport + FILENAME_TRANSACTIONS, rs).writeResultSet();
-
-        List<String[]> transactionID = new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS).readData();
-        sql = "";
-        for (String[] id : transactionID) {
-            sql = sql + "'" + id[0] + "',";
-        }
-        sql = sql.substring(0, sql.length() - 1);
-
-        sql = "SELECT \n"
+        /*sql = "SELECT \n"
                 + "    *\n"
                 + "FROM\n"
                 + "    (SELECT \n"
@@ -232,16 +254,126 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
                 + "            fk_sales_order_item = soi.id_sales_order_item\n"
                 + "                AND fk_sales_order_item_status = 27)\n"
                 + "    WHERE\n"
-                + "        tr.number IN (" + sql + ")\n"
-                + "    GROUP BY transaction_number) sc;";
-
+                + "        tr.created_at >= '" + dateFormat(extractStart) + "'\n"
+                + "            AND tr.created_at < '" + dateFormat(extractEnd) + "'\n"
+                + "            AND tr.fk_transaction_type IN (16 , 3, 15)\n"
+                + "    GROUP BY transaction_number) sc;";*/
         propertyStatusChange(STAT_EXECUTE_QUERY);
         propertyMessageChange("Fetching data");
-        rs = stmt.executeQuery(sql);
+        ResultSet rs = stmt.executeQuery(sql);
 
-        propertyStatusChange(STAT_WRITE_ADJUSTMENT);
-        propertyMessageChange("Writing " + FILENAME_ADJUSTMENTS.replace("\\", ""));
-        new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS, rs).writeResultSet();
+        propertyStatusChange(STAT_WRITE_TRANSACTION);
+        propertyMessageChange("Writing " + FILENAME_TRANSACTIONS.replace("\\", ""));
+        new CSVUtil(filepathImport + FILENAME_TRANSACTIONS, rs).writeResultSet();
+
+        if (new File(filepathImport + FILENAME_ADJUSTMENTS).exists()) {
+            List<String[]> transactionID = new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS).readData();
+            sql = "";
+            for (String[] id : transactionID) {
+                sql = sql + "'" + id[0] + "',";
+            }
+            sql = sql.substring(0, sql.length() - 1);
+
+            sql = "SELECT \n"
+                    + "    *\n"
+                    + "FROM\n"
+                    + "    (SELECT \n"
+                    + "        IFNULL(tr.number, 'NULL') 'transaction_number',\n"
+                    + "            IFNULL(tt.description, 'NULL') 'transaction_type',\n"
+                    + "            IFNULL(tr.value, 'NULL') 'value',\n"
+                    + "            IFNULL(DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'transaction_date',\n"
+                    + "            IFNULL(tr.description, 'NULL') 'description',\n"
+                    + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
+                    + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
+                    + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'\n"
+                    + "    FROM\n"
+                    + "        (SELECT \n"
+                    + "        tr.*\n"
+                    + "    FROM\n"
+                    + "        screport.transaction tr\n"
+                    + "    LEFT JOIN asc_live.transaction atr ON tr.number = atr.number\n"
+                    + "    WHERE\n"
+                    + "        tr.number IN (" + sql + ")\n"
+                    + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
+                    + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
+                    + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
+                    + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
+                    + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
+                    + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
+                    + "            MIN(id_sales_order_item_status_history)\n"
+                    + "        FROM\n"
+                    + "            oms_live.ims_sales_order_item_status_history\n"
+                    + "        WHERE\n"
+                    + "            fk_sales_order_item = soi.id_sales_order_item\n"
+                    + "                AND fk_sales_order_item_status = 27)\n"
+                    + "    GROUP BY transaction_number) scl \n"
+                    + "UNION ALL SELECT \n"
+                    + "    *\n"
+                    + "FROM\n"
+                    + "    (SELECT \n"
+                    + "        IFNULL(tr.number, 'NULL') 'transaction_number',\n"
+                    + "            IFNULL(tt.description, 'NULL') 'transaction_type',\n"
+                    + "            IFNULL(tr.value, 'NULL') 'value',\n"
+                    + "            IFNULL(DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'transaction_date',\n"
+                    + "            IFNULL(tr.description, 'NULL') 'description',\n"
+                    + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
+                    + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
+                    + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'\n"
+                    + "    FROM\n"
+                    + "        asc_live.transaction tr\n"
+                    + "    LEFT JOIN asc_live.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
+                    + "    LEFT JOIN asc_live.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
+                    + "    LEFT JOIN asc_live.seller sel ON tr.fk_seller = sel.id_seller\n"
+                    + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
+                    + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
+                    + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
+                    + "            MIN(id_sales_order_item_status_history)\n"
+                    + "        FROM\n"
+                    + "            oms_live.ims_sales_order_item_status_history\n"
+                    + "        WHERE\n"
+                    + "            fk_sales_order_item = soi.id_sales_order_item\n"
+                    + "                AND fk_sales_order_item_status = 27)\n"
+                    + "    WHERE\n"
+                    + "        tr.number IN (" + sql + ")\n"
+                    + "    GROUP BY transaction_number) sca;";
+
+            /*sql = "SELECT \n"
+                    + "    *\n"
+                    + "FROM\n"
+                    + "    (SELECT \n"
+                    + "        IFNULL(tr.number, 'NULL') 'transaction_number',\n"
+                    + "            IFNULL(tt.description, 'NULL') 'transaction_type',\n"
+                    + "            IFNULL(tr.value, 'NULL') 'value',\n"
+                    + "            IFNULL(DATE_FORMAT(tr.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'transaction_date',\n"
+                    + "            IFNULL(tr.description, 'NULL') 'description',\n"
+                    + "            IFNULL(soi.id_sales_order_item, 'NULL') 'sap_item_id',\n"
+                    + "            IFNULL(DATE_FORMAT(soish.created_at, '%Y-%m-%d %H:%i:%s'), 'NULL') 'delivered_date',\n"
+                    + "            IFNULL(sel.src_id, 'NULL') 'bob_id_supplier'"
+                    + "    FROM\n"
+                    + "        screport.transaction tr\n"
+                    + "    LEFT JOIN screport.transaction_type tt ON tr.fk_transaction_type = tt.id_transaction_type\n"
+                    + "    LEFT JOIN screport.sales_order_item scsoi ON tr.ref = scsoi.id_sales_order_item\n"
+                    + "    LEFT JOIN screport.seller sel ON tr.fk_seller = sel.id_seller\n"
+                    + "    LEFT JOIN oms_live.ims_sales_order_item soi ON scsoi.src_id = soi.id_sales_order_item\n"
+                    + "    LEFT JOIN oms_live.ims_sales_order_item_status_history soish ON soi.id_sales_order_item = soish.fk_sales_order_item\n"
+                    + "        AND soish.id_sales_order_item_status_history = (SELECT \n"
+                    + "            MIN(id_sales_order_item_status_history)\n"
+                    + "        FROM\n"
+                    + "            oms_live.ims_sales_order_item_status_history\n"
+                    + "        WHERE\n"
+                    + "            fk_sales_order_item = soi.id_sales_order_item\n"
+                    + "                AND fk_sales_order_item_status = 27)\n"
+                    + "    WHERE\n"
+                    + "        tr.number IN (" + sql + ")\n"
+                    + "    GROUP BY transaction_number) sc;";*/
+            propertyStatusChange(STAT_EXECUTE_QUERY);
+            propertyMessageChange("Fetching data");
+            rs = stmt.executeQuery(sql);
+
+            propertyStatusChange(STAT_WRITE_ADJUSTMENT);
+            propertyMessageChange("Writing " + FILENAME_ADJUSTMENTS.replace("\\", ""));
+            new CSVUtil(filepathImport + FILENAME_ADJUSTMENTS, rs).writeResultSet();
+        }
 
         propertyStatusChange(STAT_DISCONNECT_DB);
         propertyMessageChange("Disconnecting database...");
@@ -266,33 +398,43 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
         i = stmt.executeUpdate("TRUNCATE TABLE tias_java.seller_details_manual;");
         i = stmt.executeUpdate("TRUNCATE TABLE tias_java.transaction_type;");
 
-        propertyStatusChange(STAT_READ_TRANSACTION);
-        propertyMessageChange("Importing " + FILENAME_TRANSACTIONS.replace("\\", ""));
-        String filepath = filepathImport + FILENAME_TRANSACTIONS;
-        filepath = filepath.replace("\\", "\\\\");
-        i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
-                + "	'" + filepath + "'\n"
-                + "IGNORE INTO TABLE\n"
-                + "	tias_java.transaction\n"
-                + "COLUMNS TERMINATED BY\n"
-                + "	','\n"
-                + "OPTIONALLY ENCLOSED BY\n"
-                + "	'\"'\n"
-                + "IGNORE 1 ROWS;");
+        String filepath = "";
 
-        propertyStatusChange(STAT_READ_ADJUSTMENT);
-        propertyMessageChange("Importing " + FILENAME_ADJUSTMENTS.replace("\\", ""));
-        filepath = filepathImport + FILENAME_ADJUSTMENTS;
-        filepath = filepath.replace("\\", "\\\\");
-        i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
-                + "	'" + filepath + "'\n"
-                + "IGNORE INTO TABLE\n"
-                + "	tias_java.transaction\n"
-                + "COLUMNS TERMINATED BY\n"
-                + "	','\n"
-                + "OPTIONALLY ENCLOSED BY\n"
-                + "	'\"'\n"
-                + "IGNORE 1 ROWS;");
+        if (new File(filepathImport + FILENAME_TRANSACTIONS).exists()) {
+            propertyStatusChange(STAT_READ_TRANSACTION);
+            propertyMessageChange("Importing " + FILENAME_TRANSACTIONS.replace("\\", ""));
+            filepath = filepathImport + FILENAME_TRANSACTIONS;
+            filepath = filepath.replace("\\", "\\\\");
+            i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
+                    + "	'" + filepath + "'\n"
+                    + "IGNORE INTO TABLE\n"
+                    + "	tias_java.transaction\n"
+                    + "COLUMNS TERMINATED BY\n"
+                    + "	','\n"
+                    + "OPTIONALLY ENCLOSED BY\n"
+                    + "	'\"'\n"
+                    + "IGNORE 1 ROWS;");
+        } else {
+            propertyMessageChange("Warning: No transaction imported");
+        }
+
+        if (new File(filepathImport + FILENAME_ADJUSTMENTS).exists()) {
+            propertyStatusChange(STAT_READ_ADJUSTMENT);
+            propertyMessageChange("Importing " + FILENAME_ADJUSTMENTS.replace("\\", ""));
+            filepath = filepathImport + FILENAME_ADJUSTMENTS;
+            filepath = filepath.replace("\\", "\\\\");
+            i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
+                    + "	'" + filepath + "'\n"
+                    + "IGNORE INTO TABLE\n"
+                    + "	tias_java.transaction\n"
+                    + "COLUMNS TERMINATED BY\n"
+                    + "	','\n"
+                    + "OPTIONALLY ENCLOSED BY\n"
+                    + "	'\"'\n"
+                    + "IGNORE 1 ROWS;");
+        } else {
+            propertyMessageChange("Warning: No adjustment imported");
+        }
 
         String sql = "SELECT \n"
                 + "    bob_id_supplier\n"
@@ -348,33 +490,41 @@ public class TaxInvoiceAutomationDAO extends TimerTask {
         conna.close();
         cma.close();
 
-        propertyStatusChange(STAT_READ_SELLER_DETAILS);
-        propertyMessageChange("Importing " + FILENAME_SELLER_DETAILS.replace("\\", ""));
-        filepath = filepathImport + FILENAME_SELLER_DETAILS;
-        filepath = filepath.replace("\\", "\\\\");
-        i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
-                + "	'" + filepath + "'\n"
-                + "IGNORE INTO TABLE\n"
-                + "	tias_java.seller_details\n"
-                + "COLUMNS TERMINATED BY\n"
-                + "	','\n"
-                + "OPTIONALLY ENCLOSED BY\n"
-                + "	'\"'\n"
-                + "IGNORE 1 ROWS;");
+        if (new File(filepathImport + FILENAME_SELLER_DETAILS).exists()) {
+            propertyStatusChange(STAT_READ_SELLER_DETAILS);
+            propertyMessageChange("Importing " + FILENAME_SELLER_DETAILS.replace("\\", ""));
+            filepath = filepathImport + FILENAME_SELLER_DETAILS;
+            filepath = filepath.replace("\\", "\\\\");
+            i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
+                    + "	'" + filepath + "'\n"
+                    + "IGNORE INTO TABLE\n"
+                    + "	tias_java.seller_details\n"
+                    + "COLUMNS TERMINATED BY\n"
+                    + "	','\n"
+                    + "OPTIONALLY ENCLOSED BY\n"
+                    + "	'\"'\n"
+                    + "IGNORE 1 ROWS;");
+        } else {
+            propertyMessageChange("Warning: No seller details imported");
+        }
 
-        propertyStatusChange(STAT_READ_SELLER_DETAILS_MANUAL);
-        propertyMessageChange("Importing " + FILENAME_SELLER_DETAILS_MANUAL.replace("\\", ""));
-        filepath = filepathImport + FILENAME_SELLER_DETAILS_MANUAL;
-        filepath = filepath.replace("\\", "\\\\");
-        i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
-                + "	'" + filepath + "'\n"
-                + "IGNORE INTO TABLE\n"
-                + "	tias_java.seller_details_manual\n"
-                + "COLUMNS TERMINATED BY\n"
-                + "	','\n"
-                + "OPTIONALLY ENCLOSED BY\n"
-                + "	'\"'\n"
-                + "IGNORE 1 ROWS;");
+        if (new File(filepathImport + FILENAME_SELLER_DETAILS_MANUAL).exists()) {
+            propertyStatusChange(STAT_READ_SELLER_DETAILS_MANUAL);
+            propertyMessageChange("Importing " + FILENAME_SELLER_DETAILS_MANUAL.replace("\\", ""));
+            filepath = filepathImport + FILENAME_SELLER_DETAILS_MANUAL;
+            filepath = filepath.replace("\\", "\\\\");
+            i = stmt.executeUpdate("LOAD DATA LOCAL INFILE\n"
+                    + "	'" + filepath + "'\n"
+                    + "IGNORE INTO TABLE\n"
+                    + "	tias_java.seller_details_manual\n"
+                    + "COLUMNS TERMINATED BY\n"
+                    + "	','\n"
+                    + "OPTIONALLY ENCLOSED BY\n"
+                    + "	'\"'\n"
+                    + "IGNORE 1 ROWS;");
+        } else {
+            propertyMessageChange("Warning: No manual seller details imported");
+        }
 
         propertyStatusChange(STAT_DISCONNECT_DB);
         propertyMessageChange("Disconnecting database...");

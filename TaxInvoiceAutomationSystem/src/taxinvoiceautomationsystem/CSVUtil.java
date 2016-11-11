@@ -8,9 +8,10 @@ package taxinvoiceautomationsystem;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -63,7 +64,7 @@ public class CSVUtil {
     }
 
     public void writeResultSet() throws IOException, SQLException {
-        CSVWriter csvWriter = new CSVWriter(new FileWriter(filepath));
+        CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(new FileOutputStream(filepath), "UTF-8"));
 
         int col = resultSet.getMetaData().getColumnCount();
         int row = 0;
@@ -82,7 +83,6 @@ public class CSVUtil {
             csvWriter.writeNext(resultrow, false);
             row++;
         }
-
         csvWriter.close();
     }
 }
