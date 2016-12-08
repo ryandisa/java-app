@@ -169,6 +169,7 @@
                           </Properties>
                           <Events>
                             <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="textfieldExtractEndMouseClicked"/>
+                            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="textfieldExtractEndActionPerformed"/>
                           </Events>
                         </Component>
                         <Component class="javax.swing.JLabel" name="labelImportIcon">
@@ -319,7 +320,7 @@
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="1" attributes="0">
                               <EmptySpace pref="550" max="32767" attributes="0"/>
-                              <Component id="buttonExecute" linkSize="1" min="-2" pref="88" max="-2" attributes="0"/>
+                              <Component id="buttonExecute" min="-2" pref="88" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>
@@ -328,7 +329,7 @@
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="1" attributes="0">
                               <EmptySpace pref="274" max="32767" attributes="0"/>
-                              <Component id="buttonExecute" linkSize="5" min="-2" max="-2" attributes="0"/>
+                              <Component id="buttonExecute" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                       </Group>

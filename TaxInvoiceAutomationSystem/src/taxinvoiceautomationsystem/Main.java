@@ -103,6 +103,11 @@ public class Main extends javax.swing.JFrame {
                 textfieldExtractEndMouseClicked(evt);
             }
         });
+        textfieldExtractEnd.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                textfieldExtractEndActionPerformed(evt);
+            }
+        });
 
         labelImportFolder.setText("Import Folder");
 
@@ -334,6 +339,10 @@ public class Main extends javax.swing.JFrame {
         // TODO add your handling code here:
         setComponentClicked(COMPONENT_CLICKED_CALENDAR);
     }//GEN-LAST:event_calendarPropertyChange
+
+    private void textfieldExtractEndActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_textfieldExtractEndActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_textfieldExtractEndActionPerformed
 
     /**
      * @param args the command line arguments
