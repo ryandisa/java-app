@@ -23,7 +23,7 @@ public class ConnectionManager {
         try {
             System.out.println("Connecting to database...");
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-            conn = DriverManager.getConnection("jdbc:mysql://idanonymous1.iddc:3306?zeroDateTimeBehavior=convertToNull&user=maliangkay_reffly&password=wMQmJRzw5t");
+            conn = DriverManager.getConnection("jdbc:mysql://idanonymous1.iddc:3306?zeroDateTimeBehavior=convertToNull&user=maliangkay_reffly&password=Ax8YbNjHww");
         } catch (SQLException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
             Logger.getLogger(ConnectionManager.class.getName()).log(Level.SEVERE, null, ex);
         }
