@@ -68,17 +68,22 @@ public class CSVUtil {
 
         int col = resultSet.getMetaData().getColumnCount();
         int row = 0;
+        String[] resultheader = new String[col];
         String[] resultrow = new String[col];
 
         while (resultSet.next()) {
             if (row == 0) {
                 for (int i = 0; i < col; i++) {
-                    resultrow[i] = resultSet.getMetaData().getColumnLabel(i + 1);
+                    resultheader[i] = resultSet.getMetaData().getColumnLabel(i + 1);
                 }
-                csvWriter.writeNext(resultrow, false);
+                csvWriter.writeNext(resultheader, false);
             }
             for (int i = 0; i < col; i++) {
-                resultrow[i] = resultSet.getObject(i + 1) == null ? "NULL" : resultSet.getObject(i + 1).toString();
+                if (resultheader[i].contains("date")) {
+                    resultrow[i] = resultSet.getObject(i + 1) == null ? "NULL" : resultSet.getObject(i + 1).toString().substring(0, resultSet.getObject(i + 1).toString().length() - 2);
+                } else {
+                    resultrow[i] = resultSet.getObject(i + 1) == null ? "NULL" : resultSet.getObject(i + 1).toString();
+                }
             }
             csvWriter.writeNext(resultrow, false);
             row++;
