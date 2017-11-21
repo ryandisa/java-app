@@ -81,7 +81,7 @@ public class LoginDAO implements StatusProperties {
 
     public void getAccess() {
         try {
-            List<String[]> list = new CSVUtil(filepathExport + "\\" + filenameExport + ".csv").readData();
+            List<String[]> list = new CSVUtil(filepathExport + "\\lib\\" + filenameExport + ".csv").readData();
 
             username = list.get(1)[0];
             password = list.get(1)[1];
@@ -96,7 +96,8 @@ public class LoginDAO implements StatusProperties {
             message = "";
 
             if (isRememberme) {
-                new CSVUtil(filepathExport + "\\" + filenameExport + ".csv").writeAccess(username, password);
+                new File(filepathExport + "\\lib\\").mkdir();
+                new CSVUtil(filepathExport + "\\lib\\" + filenameExport + ".csv").writeAccess(username, password);
             }
 
             Connection conn = new ConnectionManager().open(username, password);

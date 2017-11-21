@@ -12,6 +12,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -38,6 +39,7 @@ public class Main extends javax.swing.JFrame {
     public Main() {
         initComponents();
 
+        // setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/icon/lzd.png")));
         addComponentListener(new MyComponentListener());
         ((DefaultCaret) textareaResult.getCaret()).setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         bg = textfieldExtractStart.getBackground();
@@ -445,6 +447,7 @@ public class Main extends javax.swing.JFrame {
 
             if (optConfirm == JOptionPane.OK_OPTION) {
                 setPanelDataEnabled(false);
+                new File(filepathExport).mkdir();
                 SchedulerDAO dao = new SchedulerDAO(extractStart, extractEnd, filepathQuery, username, password, filepathExport, filenameExport);
                 dao.addPropertyChangeListener(new MyPropertyChangeListener());
                 Timer timer = new Timer();
@@ -476,10 +479,15 @@ public class Main extends javax.swing.JFrame {
         // TODO add your handling code here:
         if (isLogin && currentCard.equals(CARD_DATA)) {
             cardShow(CARD_LOGIN);
+            isLogin = false;
             menuitemLogin.setText("Login");
         } else if (isLogin && currentCard.equals(CARD_LOGIN)) {
             menuitemLogin.setText("Logout");
+            isLogin = true;
         }
+
+        setPanelDataEnabled(isLogin);
+        menuitemRun.setEnabled(isLogin);
     }//GEN-LAST:event_menuitemLoginActionPerformed
 
     private void cardShow(String newCard) {
@@ -509,21 +517,28 @@ public class Main extends javax.swing.JFrame {
             FileNameExtensionFilter filter = new FileNameExtensionFilter("SQL File", "sql");
             chooser.setFileFilter(filter);
             returnVal = chooser.showDialog(this, "Select SQL");
-        } else {
+        } else if (filepathOption == FILEPATH_OPTION_EXPORT) {
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             returnVal = chooser.showDialog(this, "Select Folder");
         }
 
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
+        if (filepathOption == FILEPATH_OPTION_IMPORT && chooser.getSelectedFile().isDirectory()) {
+            JOptionPane.showMessageDialog(panelData, "Please select SQL file only!");
+        } else if (filepathOption == FILEPATH_OPTION_EXPORT && chooser.getSelectedFile().isFile()) {
+            JOptionPane.showMessageDialog(panelData, "Please select folder only!");
+        } else if (returnVal == JFileChooser.APPROVE_OPTION) {
             if (filepathOption == FILEPATH_OPTION_IMPORT) {
-                filepathQuery = "";
-                textareaResult.append("Selecting SQL...\n");
                 textfieldQuery.setText(chooser.getSelectedFile().getAbsolutePath());
                 filepathQuery = chooser.getSelectedFile().getAbsolutePath();
-                textareaResult.append("Import folder selected\n");
+                textareaResult.append("Query selected\n");
                 showTextFieldFilepathToolTip(textfieldQuery, filepathQuery);
+
+                filepathExport = FILEPATH_APP + "\\" + chooser.getSelectedFile().getName()
+                        .substring(0, chooser.getSelectedFile().getName().lastIndexOf("."));
+                textfieldExportFolder.setText(filepathExport);
+                textareaResult.append("Export folder selected\n");
+                showTextFieldFilepathToolTip(textfieldExportFolder, filepathExport);
             } else if (filepathOption == FILEPATH_OPTION_EXPORT) {
-                textareaResult.append("Selecting export folder...\n");
                 textfieldExportFolder.setText(chooser.getSelectedFile().getAbsolutePath());
                 filepathExport = chooser.getSelectedFile().getAbsolutePath();
                 textareaResult.append("Export folder selected\n");
@@ -798,6 +813,8 @@ public class Main extends javax.swing.JFrame {
     private final String CARD_DATA = "cardData";
     private String currentCard = "";
 
+    private final String FILEPATH_APP = new File("").getAbsolutePath();
+    ;
     private String filepathQuery = "";
     private String filepathExport = "";
     private String filenameExport = "";

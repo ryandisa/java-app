@@ -24,7 +24,7 @@ import java.util.TimerTask;
  *
  * @author Refly IDFA
  */
-public class SchedulerDAO extends TimerTask implements StatusProperties{
+public class SchedulerDAO extends TimerTask implements StatusProperties {
 
     private Date extractStart, extractEnd;
     private String filepathQuery, filepathExport, filenameExport;
@@ -70,7 +70,7 @@ public class SchedulerDAO extends TimerTask implements StatusProperties{
         propertyMessageChange("Connecting database...");
         ConnectionManager cm = new ConnectionManager();
         Connection conn = cm.open(username, password);
-        
+
         Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_READ_ONLY);
         stmt.setFetchSize(Integer.MIN_VALUE);
@@ -88,23 +88,29 @@ public class SchedulerDAO extends TimerTask implements StatusProperties{
         propertyStatusChange(STAT_WRITE_DATA);
         propertyMessageChange("Writing " + filenameExport);
         new CSVUtil(filepathExport + "\\" + filenameExport + ".csv", rs).writeResultSet();
-        
+
         conn.close();
     }
 
     private String readQuery() throws FileNotFoundException, IOException {
         String query = "";
+        boolean start = false;
 
         BufferedReader bufferedReader = new BufferedReader(new FileReader(filepathQuery));
         StringBuilder sb = new StringBuilder();
         String line;
 
         while ((line = bufferedReader.readLine()) != null) {
-            sb.append(line + "\n");
+            if (!start && line.contains("SELECT")) {
+                start = true;
+            }
+            if (start) {
+                sb.append(line + "\n");
+            }
         }
-        
-        bufferedReader.close();
+
         query = sb.toString();
+        bufferedReader.close();
 
         return query;
     }
