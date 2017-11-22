@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -64,10 +63,10 @@ public class CSVUtil {
         return list;
     }
 
-    public void writeAccess(String username, String password) throws FileNotFoundException, IOException {
+    public void writeAccess(String hostname, String port, String username, String password) throws FileNotFoundException, IOException {
         CSVWriter csvWriter = new CSVWriter(new OutputStreamWriter(new FileOutputStream(filepath), "UTF-8"));
-        csvWriter.writeNext(new String[]{"username", "password"}, false);
-        csvWriter.writeNext(new String[]{username, password}, false);
+        csvWriter.writeNext(new String[]{"hostname", "port", "username", "password"}, false);
+        csvWriter.writeNext(new String[]{hostname, port, username, password}, false);
         csvWriter.close();
     }
 

@@ -28,7 +28,7 @@ public class SchedulerDAO extends TimerTask implements StatusProperties {
 
     private Date extractStart, extractEnd;
     private String filepathQuery, filepathExport, filenameExport;
-    private String username, password;
+    private String hostname, port, username, password;
     private String message;
     private int status;
     private PropertyChangeSupport changes;
@@ -37,10 +37,13 @@ public class SchedulerDAO extends TimerTask implements StatusProperties {
         this.changes = new PropertyChangeSupport(this);
     }
 
-    public SchedulerDAO(Date extractStart, Date extractEnd, String filepathQuery, String username, String password, String filepathExport, String filenameExport) {
+    public SchedulerDAO(Date extractStart, Date extractEnd, String filepathQuery,
+            String hostname, String port, String username, String password, String filepathExport, String filenameExport) {
         this.extractStart = extractStart;
         this.extractEnd = extractEnd;
         this.filepathQuery = filepathQuery;
+        this.hostname = hostname;
+        this.port = port;
         this.username = username;
         this.password = password;
         this.filepathExport = filepathExport;
@@ -69,7 +72,7 @@ public class SchedulerDAO extends TimerTask implements StatusProperties {
         propertyStatusChange(STAT_CONNECT_ANONDB);
         propertyMessageChange("Connecting database...");
         ConnectionManager cm = new ConnectionManager();
-        Connection conn = cm.open(username, password);
+        Connection conn = cm.open(hostname, port, username, password);
 
         Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_READ_ONLY);

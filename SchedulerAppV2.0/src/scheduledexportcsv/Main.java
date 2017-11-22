@@ -68,6 +68,10 @@ public class Main extends javax.swing.JFrame {
         textfieldPassword = new javax.swing.JPasswordField();
         buttonLogin = new javax.swing.JButton();
         checkboxRememberme = new javax.swing.JCheckBox();
+        jLabel10 = new javax.swing.JLabel();
+        jLabel11 = new javax.swing.JLabel();
+        textfieldHostname = new javax.swing.JTextField();
+        textfieldPort = new javax.swing.JTextField();
         panelData = new javax.swing.JPanel();
         jSplitPane1 = new javax.swing.JSplitPane();
         jSplitPane2 = new javax.swing.JSplitPane();
@@ -104,15 +108,21 @@ public class Main extends javax.swing.JFrame {
 
         panelMain.setLayout(new java.awt.CardLayout());
 
+        panelLogin.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
         jLabel3.setText("Username");
+        panelLogin.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 60, -1, 20));
 
         jLabel9.setText("Password");
+        panelLogin.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, -1, 20));
 
         textfieldUsername.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 textfieldUsernameActionPerformed(evt);
             }
         });
+        panelLogin.add(textfieldUsername, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 60, 360, -1));
+        panelLogin.add(textfieldPassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 90, 360, -1));
 
         buttonLogin.setText("Login");
         buttonLogin.addActionListener(new java.awt.event.ActionListener() {
@@ -120,51 +130,31 @@ public class Main extends javax.swing.JFrame {
                 buttonLoginActionPerformed(evt);
             }
         });
+        panelLogin.add(buttonLogin, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 120, 100, -1));
 
         checkboxRememberme.setSelected(true);
         checkboxRememberme.setText("Remember Me");
+        panelLogin.add(checkboxRememberme, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 120, -1, -1));
 
-        javax.swing.GroupLayout panelLoginLayout = new javax.swing.GroupLayout(panelLogin);
-        panelLogin.setLayout(panelLoginLayout);
-        panelLoginLayout.setHorizontalGroup(
-            panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelLoginLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(panelLoginLayout.createSequentialGroup()
-                        .addComponent(checkboxRememberme)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(buttonLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(panelLoginLayout.createSequentialGroup()
-                        .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelLoginLayout.createSequentialGroup()
-                                .addComponent(jLabel9)
-                                .addGap(18, 18, 18))
-                            .addGroup(panelLoginLayout.createSequentialGroup()
-                                .addComponent(jLabel3)
-                                .addGap(16, 16, 16)))
-                        .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(textfieldPassword, javax.swing.GroupLayout.DEFAULT_SIZE, 256, Short.MAX_VALUE)
-                            .addComponent(textfieldUsername))))
-                .addContainerGap(822, Short.MAX_VALUE))
-        );
-        panelLoginLayout.setVerticalGroup(
-            panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(panelLoginLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(textfieldUsername, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel9)
-                    .addComponent(textfieldPassword, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addGroup(panelLoginLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(buttonLogin)
-                    .addComponent(checkboxRememberme))
-                .addContainerGap(395, Short.MAX_VALUE))
-        );
+        jLabel10.setText("Hostname");
+        panelLogin.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, -1, 20));
+
+        jLabel11.setText("Port");
+        panelLogin.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 30, -1, 20));
+
+        textfieldHostname.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                textfieldHostnameActionPerformed(evt);
+            }
+        });
+        panelLogin.add(textfieldHostname, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 30, 260, -1));
+
+        textfieldPort.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                textfieldPortActionPerformed(evt);
+            }
+        });
+        panelLogin.add(textfieldPort, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 30, 60, -1));
 
         panelMain.add(panelLogin, "cardLogin");
 
@@ -428,7 +418,8 @@ public class Main extends javax.swing.JFrame {
 
     private void menuitemRunActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuitemRunActionPerformed
         // TODO add your handling code here:
-        if (extractStart != null && extractEnd != null && !filepathQuery.isEmpty() && !filepathExport.isEmpty() && schedule != null) {
+        if (extractStart != null && extractEnd != null && !filepathQuery.isEmpty()
+                && !filepathExport.isEmpty() && schedule != null) {
             DateFormat dateFormat = new SimpleDateFormat("EEEE, MMMM dd, yyyy HH:mm");
 
             extractStart.setHours(00);
@@ -443,19 +434,22 @@ public class Main extends javax.swing.JFrame {
                     + "Schedule: " + dateFormat.format(schedule) + "\n\n"
                     + "Proceed?";
 
-            int optConfirm = JOptionPane.showConfirmDialog(this, msg, "Confirm", JOptionPane.OK_CANCEL_OPTION);
+            int optConfirm = JOptionPane.showConfirmDialog(this, msg, "Confirm",
+                    JOptionPane.OK_CANCEL_OPTION);
 
             if (optConfirm == JOptionPane.OK_OPTION) {
                 setPanelDataEnabled(false);
                 new File(filepathExport).mkdir();
-                SchedulerDAO dao = new SchedulerDAO(extractStart, extractEnd, filepathQuery, username, password, filepathExport, filenameExport);
+                SchedulerDAO dao = new SchedulerDAO(extractStart, extractEnd, filepathQuery,
+                        hostname, port, username, password, filepathExport, filenameExport);
                 dao.addPropertyChangeListener(new MyPropertyChangeListener());
                 Timer timer = new Timer();
                 timer.schedule(dao, schedule);
             }
         } else {
             textareaResult.append("Please complete all parameters!\n");
-            JOptionPane.showMessageDialog(this, "Please complete all parameters!", "Warning", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please complete all parameters!",
+                    "Warning", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_menuitemRunActionPerformed
 
@@ -465,12 +459,14 @@ public class Main extends javax.swing.JFrame {
 
     private void buttonLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_buttonLoginActionPerformed
         // TODO add your handling code here:
+        hostname = textfieldHostname.getText();
+        port = textfieldPort.getText();
         username = textfieldUsername.getText();
         password = new String(textfieldPassword.getPassword());
 
         isRememberMe = checkboxRememberme.isSelected();
 
-        LoginDAO dao = new LoginDAO(username, password, isRememberMe);
+        LoginDAO dao = new LoginDAO(hostname, port, username, password, isRememberMe);
         dao.addPropertyChangeListener(new MyPropertyChangeListener());
         dao.login();
     }//GEN-LAST:event_buttonLoginActionPerformed
@@ -490,6 +486,14 @@ public class Main extends javax.swing.JFrame {
         menuitemRun.setEnabled(isLogin);
     }//GEN-LAST:event_menuitemLoginActionPerformed
 
+    private void textfieldHostnameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_textfieldHostnameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_textfieldHostnameActionPerformed
+
+    private void textfieldPortActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_textfieldPortActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_textfieldPortActionPerformed
+
     private void cardShow(String newCard) {
         CardLayout card = (CardLayout) panelMain.getLayout();
         card.show(panelMain, newCard);
@@ -497,11 +501,15 @@ public class Main extends javax.swing.JFrame {
     }
 
     private void getLoginInfo() {
-        LoginDAO loginDAO = new LoginDAO(username, password, isRememberMe);
+        LoginDAO loginDAO = new LoginDAO(hostname, port, username, password, isRememberMe);
         loginDAO.getAccess();
+        this.hostname = loginDAO.getHostname();
+        this.port = loginDAO.getPort();
         this.username = loginDAO.getUsername();
         this.password = loginDAO.getPassword();
-
+        
+        textfieldHostname.setText(hostname);
+        textfieldPort.setText(port);
         textfieldUsername.setText(username);
         textfieldPassword.setText(password);
     }
@@ -766,6 +774,8 @@ public class Main extends javax.swing.JFrame {
     private scheduledexportcsv.JCalendar calendar;
     private javax.swing.JCheckBox checkboxRememberme;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -794,7 +804,9 @@ public class Main extends javax.swing.JFrame {
     private javax.swing.JTextField textfieldExportFolder;
     private javax.swing.JTextField textfieldExtractEnd;
     private javax.swing.JTextField textfieldExtractStart;
+    private javax.swing.JTextField textfieldHostname;
     private javax.swing.JPasswordField textfieldPassword;
+    private javax.swing.JTextField textfieldPort;
     private javax.swing.JTextField textfieldQuery;
     private javax.swing.JTextField textfieldSchedule;
     private javax.swing.JTextField textfieldUsername;
@@ -820,6 +832,8 @@ public class Main extends javax.swing.JFrame {
     private String filenameExport = "";
     private String componentClicked = "";
 
+    private String hostname = "";
+    private String port = "";
     private String username = "";
     private String password = "";
     private boolean isRememberMe = true;

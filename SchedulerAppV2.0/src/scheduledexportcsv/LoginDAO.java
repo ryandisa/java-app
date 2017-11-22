@@ -17,6 +17,8 @@ import java.util.List;
  */
 public class LoginDAO implements StatusProperties {
 
+    private String hostname;
+    private String port;
     private String username;
     private String password;
     private boolean isRememberme;
@@ -32,11 +34,21 @@ public class LoginDAO implements StatusProperties {
         this.changes = new PropertyChangeSupport(this);
     }
 
-    public LoginDAO(String username, String password, boolean isRememberme) {
+    public LoginDAO(String hostname, String port, String username, String password, boolean isRememberme) {
+        this.hostname = hostname;
+        this.port = port;
         this.username = username;
         this.password = password;
         this.isRememberme = isRememberme;
         this.changes = new PropertyChangeSupport(this);
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public String getPort() {
+        return port;
     }
 
     public String getUsername() {
@@ -57,6 +69,14 @@ public class LoginDAO implements StatusProperties {
 
     public String getFilepathExport() {
         return filepathExport;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
     }
 
     public void setUsername(String username) {
@@ -83,8 +103,10 @@ public class LoginDAO implements StatusProperties {
         try {
             List<String[]> list = new CSVUtil(filepathExport + "\\lib\\" + filenameExport + ".csv").readData();
 
-            username = list.get(1)[0];
-            password = list.get(1)[1];
+            hostname = list.get(1)[0];
+            port = list.get(1)[1];
+            username = list.get(1)[2];
+            password = list.get(1)[3];
         } catch (Exception e) {
             System.out.println("no file selected");
         }
@@ -97,10 +119,11 @@ public class LoginDAO implements StatusProperties {
 
             if (isRememberme) {
                 new File(filepathExport + "\\lib\\").mkdir();
-                new CSVUtil(filepathExport + "\\lib\\" + filenameExport + ".csv").writeAccess(username, password);
+                new CSVUtil(filepathExport + "\\lib\\" + filenameExport + ".csv")
+                        .writeAccess(hostname, port, username, password);
             }
 
-            Connection conn = new ConnectionManager().open(username, password);
+            Connection conn = new ConnectionManager().open(hostname, port, username, password);
             System.out.println("Disconnecting from database...");
             conn.close();
 

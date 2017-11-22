@@ -17,10 +17,11 @@ public class ConnectionManager {
 
     private Connection conn = null;
 
-    public Connection open(String username, String password) throws ClassNotFoundException, InstantiationException, IllegalAccessException, SQLException {
+    public Connection open(String hostname, String port, String username, String password)
+            throws ClassNotFoundException, InstantiationException, IllegalAccessException, SQLException {
         System.out.println("Connecting to database...");
         Class.forName("com.mysql.jdbc.Driver").newInstance();
-        conn = DriverManager.getConnection("jdbc:mysql://idanonymous2.iddc:3306?zeroDateTimeBehavior=convertToNull&user=" + username + "&password=" + password);
+        conn = DriverManager.getConnection("jdbc:mysql://" + hostname + ":" + port + "?zeroDateTimeBehavior=convertToNull&user=" + username + "&password=" + password);
         return conn;
     }
 }
